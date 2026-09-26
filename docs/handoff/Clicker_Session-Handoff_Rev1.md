@@ -46,7 +46,7 @@
 
 ## 5. How to work with ED
 
-- ED isn't a developer. Plain language, concise, give him finished results and exact taps.
+- ED isn't a developer. Plain language, concise, give finished results and exact taps.
 - Complex steps: plan first, ask numbered questions, wait. Simple things: just do them.
 - Honest status labels only: **implemented / tested-on-hardware / untested**.
 - Personal project: **no VaCom branding or footer.**
