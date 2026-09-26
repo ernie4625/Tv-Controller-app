@@ -1,5 +1,7 @@
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import * as Haptics from 'expo-haptics';
+
+import { favoritesStore } from '@/store/favorites';
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
@@ -28,9 +30,25 @@ describe('app smoke tests', () => {
     expect(Haptics.impactAsync).toHaveBeenCalledWith('medium');
   });
 
+  it('shows quick-launch shortcuts on the Remote screen', async () => {
+    await renderRouter('./src/app', { initialUrl: '/remote' });
+    expect(await screen.findByLabelText('Netflix')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Netflix'));
+    expect(await screen.findByText('Connect a device to open Netflix.')).toBeTruthy();
+  });
+
+  it('lets the user add a shortcut to the remote from the Apps tab', async () => {
+    await renderRouter('./src/app', { initialUrl: '/apps?edit=1' });
+    expect(await screen.findByText('Sports')).toBeTruthy();
+    expect(screen.queryByTestId('fav-nfl')).toBeNull();
+    fireEvent.press(screen.getByTestId('tile-nfl'));
+    expect(await screen.findByTestId('fav-nfl')).toBeTruthy();
+    act(() => favoritesStore.reset());
+  });
+
   it('renders the Apps and Devices tabs', async () => {
     await renderRouter('./src/app', { initialUrl: '/apps' });
-    expect(await screen.findByText('No apps yet')).toBeTruthy();
+    expect(await screen.findByText('Your shortcuts')).toBeTruthy();
     await renderRouter('./src/app', { initialUrl: '/devices' });
     expect(await screen.findByText('No devices')).toBeTruthy();
   });

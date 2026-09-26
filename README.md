@@ -5,17 +5,18 @@ Full brief and milestone plan: [`CLAUDE.md`](CLAUDE.md).
 
 ## Status
 
-| Milestone                  | State                                                          |
-| -------------------------- | -------------------------------------------------------------- |
-| M1 — Scaffold              | Implemented, **untested on hardware** (no build installed yet) |
-| M2 — Roku                  | Not started                                                    |
-| M3 — Fire TV ADB client    | Not started                                                    |
-| M4 — Fire TV remote + apps | Not started                                                    |
-| M5 — Devices + polish      | Not started                                                    |
-| M6 — Paywall               | Not started                                                    |
-| M7 — TestFlight + Store    | Not started                                                    |
+| Milestone                     | State                                                          |
+| ----------------------------- | -------------------------------------------------------------- |
+| M1 — Scaffold                 | Implemented, **untested on hardware** (no build installed yet) |
+| UI refresh — Neon + shortcuts | Implemented, **untested on hardware** (web screenshots only)   |
+| M2 — Roku                     | Not started                                                    |
+| M3 — Fire TV ADB client       | Not started                                                    |
+| M4 — Fire TV remote + apps    | Not started                                                    |
+| M5 — Devices + polish         | Not started                                                    |
+| M6 — Paywall                  | Not started                                                    |
+| M7 — TestFlight + Store       | Not started                                                    |
 
-**Blockers for the first iPhone build:** Apple Developer Program enrollment and `EXPO_TOKEN` in the environment. (Final app name is chosen at M7.)
+**Blockers for the first iPhone build:** Apple Developer Program enrollment, and the environment's network policy must allow `api.expo.dev` (`EXPO_TOKEN` is set). (Final app name is chosen at M7.)
 
 ## What M1 contains
 
@@ -24,6 +25,15 @@ Full brief and milestone plan: [`CLAUDE.md`](CLAUDE.md).
 - Hidden Diagnostics screen: Settings → tap **Version** 5× → shows build number, update channel and update ID
 - Local-network permission text and Fire TV Bonjour service declared in `app.json`
 - `eas.json` with `preview` (internal / ad-hoc, update channel `preview`) and `production` profiles
+
+## UI refresh (after M1)
+
+- **Neon theme:** electric purple / pink / cyan on near-black; glowing buttons colored by function (cyan D-pad and volume, purple nav, pink media, red power), gradient OK and Play buttons. Built-in RN gradients and shadows, no extra packages
+- **Quick launch strip** on the Remote screen: the user's own shortcuts (default 8, max 12). **Edit** opens the Apps tab in edit mode
+- **Apps tab:** On your remote (reorder with ◀ ▶), Streaming (13), Sports (8: ESPN, NFL, NBA, MLB, NHL, FOX Sports, FIFA+, DAZN), TV & System (TV Settings, Quick Settings, Fire TV Home, Roku Home, The Roku Channel, Sleep)
+- Tiles show the service **name on its signature color, never its logo** (App Store guideline 5.2). Catalog: `src/catalog/shortcuts.ts`; launch IDs are best-known values, verified on hardware in M2/M4
+- Shortcuts don't launch yet (no device connection until M2/M4); tapping one shows "Connect a device"
+- **Known gap:** shortcut edits are in memory only (reset when the app closes) until AsyncStorage is added
 
 ## Commands
 
