@@ -15,7 +15,7 @@ Full brief and milestone plan: [`CLAUDE.md`](CLAUDE.md).
 | M6 — Paywall               | Not started                                                    |
 | M7 — TestFlight + Store    | Not started                                                    |
 
-**Blockers for the first iPhone build:** Apple Developer Program enrollment, `EXPO_TOKEN` in the environment, final app name / bundle ID.
+**Blockers for the first iPhone build:** Apple Developer Program enrollment and `EXPO_TOKEN` in the environment. (Final app name is chosen at M7.)
 
 ## What M1 contains
 

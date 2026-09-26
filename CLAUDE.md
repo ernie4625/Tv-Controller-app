@@ -1,8 +1,8 @@
 # Clicker — Universal TV Remote (Fire TV + Roku)
 
-**Claude Code Project Brief & Build Guide — Rev 3 (phone-only workflow)**
-Status: IN DEVELOPMENT — M1 (scaffold) implemented, untested on hardware. Working name "Clicker" — final app name and bundle ID still to be chosen by ED (see §9).
-Rev 3 changes: repo is `ernie4625/Tv-Controller-app` (not `clicker-remote`); routes live in `src/app/` (Expo SDK 57 template); Expo working notes added (§10); Apple Developer enrollment noted as a blocker for installable builds. Prior revisions are kept unchanged in `docs/spec/`.
+**Claude Code Project Brief & Build Guide — Rev 4 (phone-only workflow)**
+Status: IN DEVELOPMENT — M1 (scaffold) implemented, untested on hardware. Working name "Clicker" — final app name and bundle ID are chosen at M7, after home beta testing (see §9).
+Rev 4 changes: final app name / bundle ID decision deferred to M7 (ED's call). Rev 3 changes: repo is `ernie4625/Tv-Controller-app` (not `clicker-remote`); routes live in `src/app/` (Expo SDK 57 template); Expo working notes added (§10); Apple Developer enrollment noted as a blocker for installable builds. Prior revisions are kept unchanged in `docs/spec/`.
 
 ---
 
@@ -218,6 +218,7 @@ Use `eas update --branch preview` instead of a full build when a milestone chang
 
 - Privacy manifest, local-network usage description string, App Store screenshots
 - `eas build --profile production` → `eas submit`
+- Final app name + bundle ID chosen by ED; update `app.json` (`name`, `ios.bundleIdentifier`, `android.package`)
 - App Store listing copy (no "Roku"/"Fire TV" in the app name or icon; allowed in description as compatibility statements)
 
 ---
@@ -228,7 +229,7 @@ Use `eas update --branch preview` instead of a full build when a milestone chang
 2. Never claim something works on hardware unless ED ran it. Use the labels: **implemented / tested-on-hardware / untested**.
 3. Protocol code gets unit tests. UI gets at least smoke tests.
 4. One milestone per session. Summarize at the end: what was built, what's untested, what ED needs to do next.
-5. No brand names or logos (Roku, Amazon, Fire TV, Alexa) in the app name, icon, splash, or bundle ID. Bundle ID: `com.ernie4625.clicker` is a **placeholder** until ED picks the final name — it must be final before the first EAS build, because it cannot change after App Store submission.
+5. No brand names or logos (Roku, Amazon, Fire TV, Alexa) in the app name, icon, splash, or bundle ID. Bundle ID: `com.ernie4625.clicker` is a **placeholder** used for all home-testing builds. ED picks the final name and bundle ID at M7, before the first `production` build. Changing it then means ED reinstalls the app once and re-pairs the Fire TV; it cannot change after App Store submission.
 6. No analytics or tracking SDKs in v1. Local-network permission prompt text must clearly explain why.
 7. Keep dependencies minimal; prefer Expo-maintained packages.
 8. Commit after every milestone with message `M<n>: <summary>`; never force-push.
@@ -314,7 +315,7 @@ Use `eas update --branch preview` instead of a full build when a milestone chang
 - **Fire TV Stick volume** may need HDMI-CEC; Cube is fine.
 - **Local Network permission** on iOS: if the user denies it, discovery silently fails — the app must detect this and show the fix.
 - **Cloud sandbox limits:** Claude Code cannot reach the Cube or your phone; every hardware result comes from you. Expect a few more build round-trips than a PC setup.
-- **Name check:** confirm the final name is not already taken on the App Store before the first EAS build; have two backups ready.
+- **Name check (at M7):** confirm the final name is not already taken on the App Store before the first `production` build; have two backups ready. Shortlist so far: CouchPilot, Clicker, Zapper, OmniRemote, BeamRemote.
 - **Apple Developer Program (blocker for installable builds):** ED is not enrolled yet. Ad-hoc `preview` builds, device registration, TestFlight, and the App Store all require it. Code work can continue; `eas build` cannot until enrollment is approved.
 
 ---
@@ -330,4 +331,4 @@ Use `eas update --branch preview` instead of a full build when a milestone chang
 
 ---
 
-_Rev 3 — in development, phone-only workflow. M1 implemented; nothing tested on hardware yet._
+_Rev 4 — in development, phone-only workflow. M1 implemented; nothing tested on hardware yet._
