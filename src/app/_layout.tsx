@@ -17,6 +17,7 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        <Stack.Screen name="compatible" options={{ title: 'Works with' }} />
         <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
       </Stack>
     </ThemeProvider>

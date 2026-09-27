@@ -1,61 +1,65 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import type { ComponentProps } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getShortcut, type Shortcut } from '@/catalog/shortcuts';
 import type { RemoteKey } from '@/protocols/types';
 import { useFavorites } from '@/store/favorites';
-import { AppTile, Chip, RemoteButton, SectionHeader, useToast } from '@/ui/components';
+import {
+  AppTile,
+  Chip,
+  RemoteButton,
+  SectionHeader,
+  useToast,
+  type IconName,
+} from '@/ui/components';
 import { haptic } from '@/ui/haptics';
 import {
   backdrop,
   colors,
+  dome,
   glow,
   radius,
+  remoteBody,
   spacing,
-  toneColor,
   typography,
-  withAlpha,
-  type Tone,
+  type Finish,
 } from '@/ui/theme';
 
-type IconName = ComponentProps<typeof Ionicons>['name'];
-
-type KeySpec = { key: RemoteKey; label: string; icon: IconName };
-
-const NAV_ROW: KeySpec[] = [
-  { key: 'back', label: 'Back', icon: 'arrow-back' },
-  { key: 'home', label: 'Home', icon: 'home' },
-  { key: 'menu', label: 'Menu', icon: 'menu' },
-];
+/** Icon colors on graphite keys, by button family. */
+const INK = {
+  nav: '#D8B4FE',
+  media: '#F9A8D4',
+  pad: '#67E8F9',
+  plain: colors.text,
+} as const;
 
 // M1: no device yet — presses only give haptic feedback. M2 wires this to a RemoteDevice.
 function onKey(_key: RemoteKey) {}
 
-function IconKey({
-  spec,
-  size = 56,
-  tone = 'purple',
-  variant = 'solid',
-}: {
-  spec: KeySpec;
+type KeyProps = {
+  k: RemoteKey;
+  label: string;
+  icon: IconName;
+  ink?: string;
   size?: number;
-  tone?: Tone;
-  variant?: 'solid' | 'ghost' | 'hero';
-}) {
+  finish?: Finish;
+  variant?: 'dome' | 'flat';
+};
+
+function Key({ k, label, icon, ink = INK.plain, size = 58, finish, variant }: KeyProps) {
   return (
     <RemoteButton
-      label={spec.label}
+      label={label}
       size={size}
-      tone={tone}
+      finish={finish}
       variant={variant}
-      onPress={() => onKey(spec.key)}
+      onPress={() => onKey(k)}
     >
       <Ionicons
-        name={spec.icon}
-        size={size * 0.42}
-        color={variant === 'hero' ? '#FFFFFF' : toneColor[tone]}
+        name={icon}
+        size={size * 0.4}
+        color={finish && finish !== 'graphite' ? '#FFFFFF' : ink}
       />
     </RemoteButton>
   );
@@ -63,25 +67,22 @@ function IconKey({
 
 function DeviceBar() {
   return (
-    <View style={styles.deviceRow}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Choose device"
-        onPress={() => {
-          void haptic('selection');
-          router.push('/devices');
-        }}
-        style={({ pressed }) => [styles.devicePill, pressed && { opacity: 0.75 }]}
-      >
-        <View style={styles.statusDot} />
-        <View style={{ flexShrink: 1 }}>
-          <Text style={styles.deviceName}>No device connected</Text>
-          <Text style={styles.deviceHint}>Tap to find your TV</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-      </Pressable>
-      <IconKey spec={{ key: 'power', label: 'Power', icon: 'power' }} size={52} tone="rose" />
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Choose device"
+      onPress={() => {
+        void haptic('selection');
+        router.push('/devices');
+      }}
+      style={({ pressed }) => [styles.devicePill, pressed && { opacity: 0.75 }]}
+    >
+      <View style={styles.statusDot} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.deviceName}>No device connected</Text>
+        <Text style={styles.deviceHint}>Tap to find your Fire TV or Roku</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -107,7 +108,7 @@ function QuickLaunch({ onLaunch }: { onLaunch: (s: Shortcut) => void }) {
         style={styles.stripScroll}
       >
         {items.map((s) => (
-          <AppTile key={s.id} shortcut={s} width={104} height={62} onPress={() => onLaunch(s)} />
+          <AppTile key={s.id} shortcut={s} width={96} height={60} onPress={() => onLaunch(s)} />
         ))}
         {items.length === 0 ? (
           <Text style={styles.deviceHint}>Tap Edit to pick your apps.</Text>
@@ -117,74 +118,75 @@ function QuickLaunch({ onLaunch }: { onLaunch: (s: Shortcut) => void }) {
   );
 }
 
-const PAD = 224;
-const ARROW = 64;
+const PAD = 228;
+const ARROW = 62;
 
 function DPad() {
-  const arrow = (key: RemoteKey, label: string, icon: IconName, pos: object) => (
+  const edge = (PAD - ARROW) / 2;
+  const arrow = (k: RemoteKey, label: string, icon: IconName, pos: ViewPos) => (
     <View style={[styles.arrowSlot, pos]}>
-      <IconKey spec={{ key, label, icon }} size={ARROW} tone="cyan" variant="ghost" />
+      <Key k={k} label={label} icon={icon} ink={INK.pad} size={ARROW} variant="flat" />
     </View>
   );
-  const edge = (PAD - ARROW) / 2;
   return (
-    <View style={styles.pad}>
-      {arrow('up', 'Up', 'chevron-up', { top: 6, left: edge })}
-      {arrow('down', 'Down', 'chevron-down', { bottom: 6, left: edge })}
-      {arrow('left', 'Left', 'chevron-back', { left: 6, top: edge })}
-      {arrow('right', 'Right', 'chevron-forward', { right: 6, top: edge })}
-      <RemoteButton
-        label="OK"
-        size={100}
-        variant="hero"
-        haptic="press"
-        onPress={() => onKey('select')}
-      />
+    <View style={[styles.pad, dome('graphite', false, 6)]}>
+      {arrow('up', 'Up', 'caret-up', { top: 4, left: edge })}
+      {arrow('down', 'Down', 'caret-down', { bottom: 4, left: edge })}
+      {arrow('left', 'Left', 'caret-back', { left: 4, top: edge })}
+      {arrow('right', 'Right', 'caret-forward', { right: 4, top: edge })}
+      <View style={styles.okWell}>
+        <RemoteButton
+          label="OK"
+          size={92}
+          finish="ok"
+          haptic="press"
+          onPress={() => onKey('select')}
+        />
+      </View>
     </View>
   );
 }
 
-function MediaRow() {
-  return (
-    <View style={styles.row}>
-      <IconKey spec={{ key: 'rewind', label: 'Rewind', icon: 'play-back' }} tone="pink" />
-      <IconKey
-        spec={{ key: 'playPause', label: 'Play/Pause', icon: 'play' }}
-        size={72}
-        variant="hero"
-      />
-      <IconKey
-        spec={{ key: 'fastForward', label: 'Fast-forward', icon: 'play-forward' }}
-        tone="pink"
-      />
-    </View>
-  );
-}
+type ViewPos = { top?: number; bottom?: number; left?: number; right?: number };
 
 function VolumeRocker() {
   return (
-    <View style={styles.volume}>
-      <IconKey
-        spec={{ key: 'volumeDown', label: 'Volume down', icon: 'remove' }}
-        tone="cyan"
-        variant="ghost"
-        size={52}
+    <View style={[styles.rocker, dome('graphite')]}>
+      <Key
+        k="volumeDown"
+        label="Volume down"
+        icon="remove"
+        ink={INK.pad}
+        size={56}
+        variant="flat"
       />
-      <View style={styles.volumeCenter}>
-        <IconKey
-          spec={{ key: 'mute', label: 'Mute', icon: 'volume-mute' }}
-          tone="cyan"
-          variant="ghost"
-          size={44}
-        />
-        <Text style={styles.volumeLabel}>VOL</Text>
+      <Text style={styles.rockerLabel}>VOL</Text>
+      <Key k="volumeUp" label="Volume up" icon="add" ink={INK.pad} size={56} variant="flat" />
+    </View>
+  );
+}
+
+function Remote() {
+  return (
+    <View style={[styles.body, remoteBody]}>
+      <View style={styles.topRow}>
+        <Key k="power" label="Power" icon="power" size={52} finish="power" />
+        <View style={styles.led} />
+        <Key k="mute" label="Mute" icon="volume-mute" size={52} />
       </View>
-      <IconKey
-        spec={{ key: 'volumeUp', label: 'Volume up', icon: 'add' }}
-        tone="cyan"
-        variant="ghost"
-        size={52}
-      />
+      <DPad />
+      <View style={styles.row}>
+        <Key k="back" label="Back" icon="arrow-undo" ink={INK.nav} />
+        <Key k="home" label="Home" icon="home" ink={INK.nav} />
+        <Key k="menu" label="Menu" icon="menu" ink={INK.nav} />
+      </View>
+      <View style={styles.row}>
+        <Key k="rewind" label="Rewind" icon="play-back" ink={INK.media} />
+        <Key k="playPause" label="Play/Pause" icon="play" size={66} finish="play" />
+        <Key k="fastForward" label="Fast-forward" icon="play-forward" ink={INK.media} />
+      </View>
+      <VolumeRocker />
+      <Text style={styles.emboss}>CLICKER</Text>
     </View>
   );
 }
@@ -197,14 +199,7 @@ export default function RemoteScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <DeviceBar />
         <QuickLaunch onLaunch={launch} />
-        <DPad />
-        <View style={styles.row}>
-          {NAV_ROW.map((k) => (
-            <IconKey key={k.key} spec={k} />
-          ))}
-        </View>
-        <MediaRow />
-        <VolumeRocker />
+        <Remote />
       </ScrollView>
       {toast}
     </View>
@@ -213,11 +208,9 @@ export default function RemoteScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, gap: spacing.md + 4, alignItems: 'center', paddingBottom: 96 },
-  block: { alignSelf: 'stretch', gap: spacing.sm },
-  deviceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, alignSelf: 'stretch' },
+  content: { padding: spacing.md, gap: spacing.md + 4, paddingBottom: 96 },
+  block: { gap: spacing.xs },
   devicePill: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -238,45 +231,72 @@ const styles = StyleSheet.create({
   deviceName: { ...typography.body, color: colors.text, fontWeight: '700' },
   deviceHint: { ...typography.caption, color: colors.textSecondary },
   stripScroll: { marginHorizontal: -spacing.md },
-  strip: { gap: spacing.sm + 2, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  strip: {
+    gap: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  body: {
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+  },
+  led: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3B1111',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
   pad: {
     width: PAD,
     height: PAD,
     borderRadius: PAD / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: withAlpha(colors.cyan, 0.45),
-    ...glow(colors.cyan, 0.3, 30),
   },
   arrowSlot: { position: 'absolute' },
+  okWell: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.6)',
+  },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    justifyContent: 'space-between',
     alignItems: 'center',
     alignSelf: 'stretch',
+    paddingHorizontal: spacing.sm,
   },
-  volume: {
+  rocker: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: 260,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.round,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: withAlpha(colors.cyan, 0.45),
-    ...glow(colors.cyan, 0.2, 16),
+    width: 210,
+    height: 58,
+    borderRadius: 29,
+    paddingHorizontal: 2,
   },
-  volumeCenter: { alignItems: 'center' },
-  volumeLabel: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
-    fontWeight: '800',
-    letterSpacing: 2,
-    marginTop: -6,
+  rockerLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '800', letterSpacing: 2 },
+  emboss: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 6,
+    color: 'rgba(255,255,255,0.18)',
+    marginTop: spacing.xs,
   },
 });

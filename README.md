@@ -9,6 +9,7 @@ Full brief and milestone plan: [`CLAUDE.md`](CLAUDE.md).
 | ----------------------------- | -------------------------------------------------------------- |
 | M1 — Scaffold                 | Implemented, **untested on hardware** (no build installed yet) |
 | UI refresh — Neon + shortcuts | Implemented, **untested on hardware** (web screenshots only)   |
+| UI round 2 — 3D + brands      | Implemented, **untested on hardware** (web screenshots only)   |
 | M2 — Roku                     | Not started                                                    |
 | M3 — Fire TV ADB client       | Not started                                                    |
 | M4 — Fire TV remote + apps    | Not started                                                    |
@@ -34,6 +35,15 @@ Full brief and milestone plan: [`CLAUDE.md`](CLAUDE.md).
 - Tiles show the service **name on its signature color, never its logo** (App Store guideline 5.2). Catalog: `src/catalog/shortcuts.ts`; launch IDs are best-known values, verified on hardware in M2/M4
 - Shortcuts don't launch yet (no device connection until M2/M4); tapping one shows "Connect a device"
 - **Known gap:** shortcut edits are in memory only (reset when the app closes) until AsyncStorage is added
+
+## UI round 2
+
+- **Classic 3D remote:** domed plastic keys (lit top, shadow skirt, sink when pressed) on a drawn remote body; red Power, violet OK, pink Play, graphite keys with colored icons, volume rocker
+- **Real brand looks** on shortcut tiles: official logo artwork from [simple-icons](https://simpleicons.org) (CC0 files, trademarks belong to their owners) for 15 brands; styled wordmarks for Prime Video, Hulu, Disney+, Peacock, Pluto TV, ESPN and NFL. See `assets/logos/README.md`. Review before App Store submission (M7)
+- **Settings:** devices, Works with, haptic feedback on/off + strength (Soft / Normal / Strong), quick-launch edit/reset, privacy note, version (tap 5× for Diagnostics)
+- **Works with** screen (`src/app/compatible.tsx`, data in `src/catalog/compatibility.ts`): Fire TV and Roku models, setup steps, coming-later list. Nothing verified on hardware yet
+- **Devices tab:** Find your TV (search arrives with M2/M4), saved devices, manual IP, Works with links
+- Settings, like shortcuts, reset when the app closes until AsyncStorage is added
 
 ## Commands
 

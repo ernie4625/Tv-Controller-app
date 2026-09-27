@@ -95,6 +95,8 @@ export default function AppsScreen() {
               <AppTile
                 shortcut={s}
                 width={tileWidth}
+                height={80}
+                caption
                 onPress={() => onTile(s)}
                 badge={editing ? 'added' : undefined}
                 testID={`fav-${s.id}`}
@@ -132,6 +134,8 @@ export default function AppsScreen() {
                     key={s.id}
                     shortcut={s}
                     width={tileWidth}
+                    height={80}
+                    caption
                     onPress={() => onTile(s)}
                     badge={editing ? (added ? 'added' : 'add') : undefined}
                     dimmed={editing && !added && favorites.length >= MAX_FAVORITES}

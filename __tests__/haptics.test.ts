@@ -1,17 +1,37 @@
 import * as Haptics from 'expo-haptics';
 
+import { settingsStore } from '@/store/settings';
 import { haptic } from '@/ui/haptics';
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   selectionAsync: jest.fn(() => Promise.resolve()),
   notificationAsync: jest.fn(() => Promise.resolve()),
-  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' },
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
   NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
 }));
 
 describe('haptic', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    settingsStore.reset();
+  });
+
+  it('stays silent when haptics are turned off in Settings', async () => {
+    settingsStore.update({ haptics: false });
+    await haptic('press');
+    await haptic('success');
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+    expect(Haptics.notificationAsync).not.toHaveBeenCalled();
+  });
+
+  it('uses heavier impacts on the strong setting', async () => {
+    settingsStore.update({ hapticStrength: 'strong' });
+    await haptic('tap');
+    await haptic('press');
+    expect(Haptics.impactAsync).toHaveBeenCalledWith('medium');
+    expect(Haptics.impactAsync).toHaveBeenCalledWith('heavy');
+  });
 
   it('uses a light impact for a normal tap', async () => {
     await haptic('tap');

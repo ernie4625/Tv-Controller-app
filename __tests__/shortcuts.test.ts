@@ -5,6 +5,7 @@ import {
   getShortcut,
   supportsDevice,
 } from '@/catalog/shortcuts';
+import { LOGOS } from '@/catalog/logos';
 
 describe('shortcut catalog', () => {
   it('has unique IDs', () => {
@@ -53,5 +54,12 @@ describe('shortcut catalog', () => {
     expect(supportsDevice(getShortcut('rokuhome')!, 'firetv')).toBe(false);
     expect(supportsDevice(getShortcut('firetvhome')!, 'roku')).toBe(false);
     expect(supportsDevice(getShortcut('nfl')!, 'roku')).toBe(true);
+  });
+
+  it('gives every tile a logo, a wordmark or an icon, and every logo has artwork', () => {
+    for (const s of SHORTCUTS) {
+      expect(s.logo || s.wordmark || s.icon).toBeTruthy();
+      if (s.logo) expect(LOGOS[s.logo]).toBeDefined();
+    }
   });
 });

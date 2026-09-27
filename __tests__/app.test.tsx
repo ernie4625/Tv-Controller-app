@@ -2,12 +2,13 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 import * as Haptics from 'expo-haptics';
 
 import { favoritesStore } from '@/store/favorites';
+import { settingsStore } from '@/store/settings';
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   selectionAsync: jest.fn(() => Promise.resolve()),
   notificationAsync: jest.fn(() => Promise.resolve()),
-  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' },
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
   NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
 }));
 
@@ -50,7 +51,21 @@ describe('app smoke tests', () => {
     await renderRouter('./src/app', { initialUrl: '/apps' });
     expect(await screen.findByText('Your shortcuts')).toBeTruthy();
     await renderRouter('./src/app', { initialUrl: '/devices' });
-    expect(await screen.findByText('No devices')).toBeTruthy();
+    expect(await screen.findByText('Find your TV')).toBeTruthy();
+  });
+
+  it('lists compatible Fire TV and Roku devices', async () => {
+    await renderRouter('./src/app', { initialUrl: '/compatible' });
+    expect(await screen.findByText('Fire TV Cube (all generations)')).toBeTruthy();
+    expect(screen.getByText('Roku Ultra')).toBeTruthy();
+    expect(screen.getByText('Turn ADB Debugging ON.')).toBeTruthy();
+  });
+
+  it('turns haptics off from Settings', async () => {
+    await renderRouter('./src/app', { initialUrl: '/settings' });
+    fireEvent(await screen.findByLabelText('Haptic feedback'), 'valueChange', false);
+    expect(settingsStore.get().haptics).toBe(false);
+    act(() => settingsStore.reset());
   });
 
   it('opens hidden Diagnostics after tapping Version 5 times', async () => {

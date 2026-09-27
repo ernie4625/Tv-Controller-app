@@ -81,6 +81,49 @@ export function glow(color: string, strength = 0.45, blur = 18): ViewStyle {
   return { boxShadow: `0 0 ${blur}px ${withAlpha(color, strength)}` };
 }
 
+/** Blends two #RRGGBB colors; `t` = 0 gives `a`, 1 gives `b`. */
+export function mix(a: string, b: string, t: number): string {
+  const n = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  const c = [0, 1, 2].map((i) => Math.round(n(a, i) + (n(b, i) - n(a, i)) * t));
+  return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Physical button finishes for the classic 3D remote. */
+export type Finish = 'graphite' | 'power' | 'ok' | 'play';
+
+export const finishes: Record<Finish, { top: string; bottom: string; icon: string }> = {
+  graphite: { top: '#4A4A5A', bottom: '#23232D', icon: colors.text },
+  power: { top: '#FF6B7D', bottom: '#B80F2A', icon: '#FFFFFF' },
+  ok: { top: '#C58BFF', bottom: '#6D28D9', icon: '#FFFFFF' },
+  play: { top: '#FF7AC2', bottom: '#BE185D', icon: '#FFFFFF' },
+};
+
+/**
+ * Domed, raised plastic button: light top, dark base, a solid "skirt" below and a soft floor
+ * shadow. Pressed, the skirt disappears and the button sinks (pair with translateY).
+ */
+export function dome(finish: Finish, pressed = false, depth = 5): ViewStyle {
+  const f = finishes[finish];
+  const skirt = mix(f.bottom, '#000000', 0.55);
+  const top = pressed ? mix(f.top, f.bottom, 0.35) : f.top;
+  return {
+    ...gradient(top, f.bottom, 180),
+    boxShadow: pressed
+      ? `inset 0 3px 6px rgba(0,0,0,0.55), 0 1px 0 ${skirt}, 0 2px 4px rgba(0,0,0,0.5)`
+      : `inset 0 2px 1px rgba(255,255,255,0.30), inset 0 -3px 5px rgba(0,0,0,0.40), 0 ${depth}px 0 ${skirt}, 0 ${depth + 6}px 14px rgba(0,0,0,0.6)`,
+  };
+}
+
+/** The remote's plastic housing. */
+export const remoteBody: ViewStyle = {
+  ...gradient('#2A2937', '#111018', 180),
+  borderRadius: 44,
+  borderWidth: 1,
+  borderColor: 'rgba(255,255,255,0.07)',
+  boxShadow:
+    'inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 0 rgba(0,0,0,0.5), 0 24px 48px rgba(0,0,0,0.65)',
+};
+
 /** Header color; also the top of the screen backdrop so header and content read as one surface. */
 export const headerBackground = '#1E0B45';
 

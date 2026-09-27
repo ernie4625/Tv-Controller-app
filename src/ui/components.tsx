@@ -1,24 +1,35 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
+import { LOGOS } from '@/catalog/logos';
 import type { Shortcut } from '@/catalog/shortcuts';
 
 import { haptic, type HapticKind } from './haptics';
 import {
   backdrop,
   colors,
+  dome,
+  finishes,
   glow,
   gradient,
   radius,
   spacing,
-  toneColor,
   typography,
   withAlpha,
-  type Tone,
+  type Finish,
 } from './theme';
 
-type IconName = ComponentProps<typeof Ionicons>['name'];
+export type IconName = ComponentProps<typeof Ionicons>['name'];
 
 export function Screen({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.screen, backdrop, style]}>{children}</View>;
@@ -47,11 +58,12 @@ type RemoteButtonProps = {
   onPress?: () => void;
   haptic?: HapticKind;
   size?: number;
-  shape?: 'round' | 'pill';
-  /** Neon color family for border, icon glow and pressed tint. */
-  tone?: Tone;
-  /** `solid`: outlined neon button. `ghost`: no chrome until pressed (D-pad arrows, volume rocker). `hero`: gradient fill. */
-  variant?: 'solid' | 'ghost' | 'hero';
+  /** Width for pill-shaped keys; defaults to `size` (round). */
+  width?: number;
+  /** Plastic color of a raised key. */
+  finish?: Finish;
+  /** `dome`: raised 3D key. `flat`: no chrome until pressed (arrows on the D-pad ring, rocker halves). */
+  variant?: 'dome' | 'flat';
   children?: ReactNode;
   testID?: string;
   style?: StyleProp<ViewStyle>;
@@ -63,14 +75,13 @@ export function RemoteButton({
   onPress,
   haptic: kind = 'tap',
   size = 64,
-  shape = 'round',
-  tone = 'purple',
-  variant = 'solid',
+  width,
+  finish = 'graphite',
+  variant = 'dome',
   children,
   testID,
   style,
 }: RemoteButtonProps) {
-  const c = toneColor[tone];
   return (
     <Pressable
       accessibilityRole="button"
@@ -82,29 +93,16 @@ export function RemoteButton({
       }}
       style={({ pressed }) => [
         styles.button,
-        {
-          height: size,
-          minWidth: size,
-          borderRadius: shape === 'round' ? size / 2 : radius.lg,
-          transform: [{ scale: pressed ? 0.93 : 1 }],
-        },
-        variant === 'solid' && {
-          backgroundColor: pressed ? withAlpha(c, 0.28) : colors.surface,
-          borderColor: withAlpha(c, pressed ? 1 : 0.55),
-          borderWidth: 1.5,
-          ...glow(c, pressed ? 0.7 : 0.25, pressed ? 22 : 12),
-        },
-        variant === 'ghost' && {
-          backgroundColor: pressed ? withAlpha(c, 0.3) : 'transparent',
-        },
-        variant === 'hero' && {
-          ...gradient(colors.purple, colors.pink),
-          ...glow(colors.pink, pressed ? 0.95 : 0.6, pressed ? 34 : 24),
-        },
+        { height: size, width: width ?? size, borderRadius: size / 2 },
+        variant === 'dome'
+          ? [dome(finish, pressed), { transform: [{ translateY: pressed ? 4 : 0 }] }]
+          : { backgroundColor: pressed ? 'rgba(0,0,0,0.35)' : 'transparent' },
         style,
       ]}
     >
-      {children ?? <Text style={styles.buttonLabel}>{label}</Text>}
+      {children ?? (
+        <Text style={[styles.buttonLabel, { color: finishes[finish].icon }]}>{label}</Text>
+      )}
     </Pressable>
   );
 }
@@ -117,27 +115,71 @@ type AppTileProps = {
   /** Edit-mode badge: `add` (+), `added` (check) or none. */
   badge?: 'add' | 'added';
   dimmed?: boolean;
+  /** Show the service name under the logo (Apps grid). Off on the compact Remote strip. */
+  caption?: boolean;
   testID?: string;
 };
 
-/** Colored launch tile: service name on its signature gradient. No logos (App Store 5.2). */
+/** Launch tile drawn in the brand's look: real logo, styled wordmark, or icon + name. */
 export function AppTile({
-  shortcut,
+  shortcut: s,
   width,
   height = 72,
   onPress,
   badge,
   dimmed,
+  caption,
   testID,
 }: AppTileProps) {
-  const [from, to] = shortcut.colors;
-  const fg = shortcut.textColor ?? '#FFFFFF';
-  const len = shortcut.label.length;
-  const fontSize = len > 12 ? 13 : len > 8 || shortcut.icon ? 14 : 17;
+  const [from, to] = s.colors;
+  const logo = s.logo ? LOGOS[s.logo] : undefined;
+  const fg = s.textColor ?? '#FFFFFF';
+  const logoH = Math.min(height * 0.42, 34);
+  const logoW = logo ? Math.min(logoH * logo.aspect, width - 28) : 0;
+
+  let art: ReactNode;
+  if (logo) {
+    art = (
+      <Image
+        source={logo.source}
+        accessibilityIgnoresInvertColors
+        resizeMode="contain"
+        style={{ width: logoW, height: logoW / logo.aspect, tintColor: s.logoTint ?? '#FFFFFF' }}
+      />
+    );
+  } else if (s.wordmark) {
+    const w = s.wordmark;
+    art = (
+      <Text
+        numberOfLines={1}
+        style={{
+          color: w.color,
+          fontSize: (w.size ?? 18) * (height < 70 ? 0.85 : 1),
+          fontWeight: '900',
+          fontStyle: w.italic ? 'italic' : 'normal',
+          letterSpacing: w.spacing ?? 0,
+        }}
+      >
+        {w.text}
+      </Text>
+    );
+  } else {
+    art = (
+      <View style={styles.iconArt}>
+        {s.icon ? <Ionicons name={s.icon as IconName} size={22} color={fg} /> : null}
+        <Text numberOfLines={2} style={[styles.iconLabel, { color: fg }]}>
+          {s.label}
+        </Text>
+      </View>
+    );
+  }
+
+  const showCaption = caption && (logo || s.wordmark);
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={shortcut.label}
+      accessibilityLabel={s.label}
       accessibilityState={badge ? { selected: badge === 'added' } : undefined}
       testID={testID}
       onPress={() => {
@@ -146,17 +188,26 @@ export function AppTile({
       }}
       style={({ pressed }) => [
         styles.tile,
-        { width, height, opacity: dimmed ? 0.4 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] },
-        gradient(from, to, 150),
-        glow(from, pressed ? 0.8 : 0.35, pressed ? 24 : 14),
+        {
+          width,
+          height,
+          opacity: dimmed ? 0.35 : 1,
+          transform: [{ translateY: pressed ? 3 : 0 }, { scale: pressed ? 0.97 : 1 }],
+        },
+        gradient(from, to, 160),
+        {
+          boxShadow: pressed
+            ? 'inset 0 2px 5px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.5)'
+            : 'inset 0 1px 0 rgba(255,255,255,0.18), 0 4px 0 rgba(0,0,0,0.55), 0 8px 14px rgba(0,0,0,0.45)',
+        },
       ]}
     >
-      {shortcut.icon ? (
-        <Ionicons name={shortcut.icon as IconName} size={20} color={fg} style={styles.tileIcon} />
+      <View style={styles.tileArt}>{art}</View>
+      {showCaption ? (
+        <Text numberOfLines={1} style={styles.tileCaption}>
+          {s.label}
+        </Text>
       ) : null}
-      <Text numberOfLines={2} style={[styles.tileLabel, { color: fg, fontSize }]}>
-        {shortcut.label}
-      </Text>
       {badge ? (
         <View
           style={[
@@ -208,6 +259,147 @@ export function Chip({
   );
 }
 
+/** Rounded card holding a list of rows (Settings, Devices). */
+export function ListGroup({
+  title,
+  footer,
+  children,
+}: {
+  title?: string;
+  footer?: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.groupWrap}>
+      {title ? <Text style={[styles.sectionTitle, styles.groupTitle]}>{title}</Text> : null}
+      <View style={styles.group}>{children}</View>
+      {footer ? <Text style={styles.groupFooter}>{footer}</Text> : null}
+    </View>
+  );
+}
+
+type ListRowProps = {
+  label: string;
+  icon?: IconName;
+  iconColor?: string;
+  detail?: string;
+  value?: string;
+  onPress?: () => void;
+  right?: ReactNode;
+  last?: boolean;
+  testID?: string;
+};
+
+export function ListRow({
+  label,
+  icon,
+  iconColor = colors.purple,
+  detail,
+  value,
+  onPress,
+  right,
+  last,
+  testID,
+}: ListRowProps) {
+  const body = (
+    <>
+      {icon ? (
+        <View style={[styles.rowIcon, { backgroundColor: withAlpha(iconColor, 0.18) }]}>
+          <Ionicons name={icon} size={17} color={iconColor} />
+        </View>
+      ) : null}
+      <View style={styles.rowText}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {detail ? <Text style={styles.rowDetail}>{detail}</Text> : null}
+      </View>
+      {value ? <Text style={styles.rowValue}>{value}</Text> : null}
+      {right}
+      {onPress && !right ? (
+        <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+      ) : null}
+    </>
+  );
+  const rowStyle = [styles.row, !last && styles.rowDivider];
+  if (!onPress) {
+    return (
+      <View style={rowStyle} testID={testID}>
+        {body}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID={testID}
+      onPress={() => {
+        void haptic('selection');
+        onPress();
+      }}
+      style={({ pressed }) => [rowStyle, pressed && { backgroundColor: colors.surfaceRaised }]}
+    >
+      {body}
+    </Pressable>
+  );
+}
+
+export function Toggle({
+  value,
+  onChange,
+  label,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <Switch
+      accessibilityLabel={label}
+      value={value}
+      onValueChange={(v) => {
+        onChange(v);
+        void haptic('selection');
+      }}
+      trackColor={{ false: colors.border, true: colors.pink }}
+      thumbColor="#FFFFFF"
+      ios_backgroundColor={colors.border}
+    />
+  );
+}
+
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={styles.segmented} accessibilityRole="radiogroup">
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            accessibilityRole="radio"
+            accessibilityLabel={o.label}
+            accessibilityState={{ checked: on }}
+            onPress={() => {
+              onChange(o.value);
+              void haptic('selection');
+            }}
+            style={[styles.segment, on && gradient(colors.purple, colors.pink)]}
+          >
+            <Text style={[styles.segmentLabel, on && { color: '#FFFFFF' }]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Brief message pinned above the tab bar; clears itself after ~2.5 s. */
 export function useToast(): [ReactNode, (message: string) => void] {
   const [message, setMessage] = useState<string | null>(null);
@@ -249,20 +441,26 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   sectionTitle: { ...typography.section, color: colors.textSecondary },
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  buttonLabel: { fontSize: 22, fontWeight: '800', color: colors.text, letterSpacing: 1 },
+  button: { alignItems: 'center', justifyContent: 'center' },
+  buttonLabel: { fontSize: 22, fontWeight: '800', letterSpacing: 1 },
   tile: {
     borderRadius: radius.md,
-    padding: spacing.sm + 2,
-    justifyContent: 'flex-end',
-    overflow: 'visible',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  tileIcon: { position: 'absolute', top: spacing.sm, left: spacing.sm + 2 },
-  tileLabel: { fontWeight: '800', letterSpacing: 0.2 },
+  tileArt: { flex: 1, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
+  tileCaption: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  iconArt: { alignItems: 'center', gap: 4 },
+  iconLabel: { fontSize: 13, fontWeight: '800', textAlign: 'center' },
   badge: {
     position: 'absolute',
     top: 6,
@@ -285,6 +483,50 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipLabel: { ...typography.caption, color: colors.text, fontWeight: '700' },
+  groupWrap: { gap: spacing.sm },
+  groupTitle: { marginLeft: spacing.sm },
+  group: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  groupFooter: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginHorizontal: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    minHeight: 52,
+  },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  rowIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowText: { flex: 1, gap: 2 },
+  rowLabel: { ...typography.body, color: colors.text },
+  rowDetail: { ...typography.caption, color: colors.textSecondary },
+  rowValue: { ...typography.body, color: colors.textSecondary },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    borderRadius: radius.round,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segment: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.round },
+  segmentLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
   toast: {
     position: 'absolute',
     left: spacing.md,
