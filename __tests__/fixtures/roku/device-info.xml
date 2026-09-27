@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<device-info>
+	<udn>28001240-0000-1000-8000-d8313488aa55</udn>
+	<serial-number>X01900ABCDEF</serial-number>
+	<device-id>S0A123456789</device-id>
+	<vendor-name>TCL</vendor-name>
+	<model-name>TCL &amp; Roku 55&quot; 4K TV</model-name>
+	<model-number>7105X</model-number>
+	<friendly-device-name>55" TCL Roku TV</friendly-device-name>
+	<user-device-name>Living Room TV</user-device-name>
+	<default-device-name>TCL•Roku TV - X01900ABCDEF</default-device-name>
+	<is-tv>true</is-tv>
+	<power-mode>PowerOn</power-mode>
+	<network-type>wifi</network-type>
+</device-info>

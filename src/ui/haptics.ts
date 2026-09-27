@@ -1,19 +1,30 @@
 import * as Haptics from 'expo-haptics';
 
+import { settingsStore, type HapticStrength } from '@/store/settings';
+
 export type HapticKind = 'tap' | 'press' | 'success' | 'warning' | 'error' | 'selection';
 
 /**
  * One helper for every haptic in the app. Failures are swallowed on purpose:
  * haptics are feedback only and must never break a button press.
  */
+const IMPACT: Record<
+  HapticStrength,
+  { tap: Haptics.ImpactFeedbackStyle; press: Haptics.ImpactFeedbackStyle }
+> = {
+  soft: { tap: Haptics.ImpactFeedbackStyle.Light, press: Haptics.ImpactFeedbackStyle.Light },
+  normal: { tap: Haptics.ImpactFeedbackStyle.Light, press: Haptics.ImpactFeedbackStyle.Medium },
+  strong: { tap: Haptics.ImpactFeedbackStyle.Medium, press: Haptics.ImpactFeedbackStyle.Heavy },
+};
+
 export async function haptic(kind: HapticKind = 'tap'): Promise<void> {
+  const { haptics, hapticStrength } = settingsStore.get();
+  if (!haptics) return;
   try {
     switch (kind) {
       case 'tap':
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        break;
       case 'press':
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        await Haptics.impactAsync(IMPACT[hapticStrength][kind]);
         break;
       case 'selection':
         await Haptics.selectionAsync();
