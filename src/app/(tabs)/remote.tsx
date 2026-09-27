@@ -1,9 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
+import { createContext, useContext } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getShortcut, type Shortcut } from '@/catalog/shortcuts';
 import type { RemoteKey } from '@/protocols/types';
+import { devicesStore, useDevices } from '@/store/devices';
 import { useFavorites } from '@/store/favorites';
 import {
   AppTile,
@@ -34,8 +36,8 @@ const INK = {
   plain: colors.text,
 } as const;
 
-// M1: no device yet — presses only give haptic feedback. M2 wires this to a RemoteDevice.
-function onKey(_key: RemoteKey) {}
+/** Sends a key to the current TV; provided by RemoteScreen so errors can surface as a toast. */
+const SendKey = createContext<(key: RemoteKey) => void>(() => {});
 
 type KeyProps = {
   k: RemoteKey;
@@ -48,6 +50,7 @@ type KeyProps = {
 };
 
 function Key({ k, label, icon, ink = INK.plain, size = 58, finish, variant }: KeyProps) {
+  const onKey = useContext(SendKey);
   return (
     <RemoteButton
       label={label}
@@ -65,21 +68,56 @@ function Key({ k, label, icon, ink = INK.plain, size = 58, finish, variant }: Ke
   );
 }
 
+const DOT: Record<string, string> = {
+  idle: colors.warning,
+  connecting: colors.cyan,
+  connected: colors.success,
+  error: colors.danger,
+};
+
 function DeviceBar() {
+  const { status, error, currentId } = useDevices();
+  const current = devicesStore.current();
+  const title =
+    status === 'connected' && current
+      ? current.name
+      : status === 'connecting'
+        ? 'Connecting…'
+        : status === 'error' && current
+          ? `${current.name} — not responding`
+          : 'No device connected';
+  const hint =
+    status === 'connected' && current
+      ? `Connected · ${current.ip}`
+      : status === 'error'
+        ? (error ?? 'Tap to reconnect')
+        : status === 'connecting'
+          ? 'Hang on…'
+          : 'Tap to find your Fire TV or Roku';
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Choose device"
       onPress={() => {
         void haptic('selection');
-        router.push('/devices');
+        if (status === 'error' && currentId) {
+          void devicesStore.select(currentId).catch(() => {});
+        } else {
+          router.push('/devices');
+        }
       }}
       style={({ pressed }) => [styles.devicePill, pressed && { opacity: 0.75 }]}
     >
-      <View style={styles.statusDot} />
+      <View
+        style={[styles.statusDot, { backgroundColor: DOT[status] }, glow(DOT[status], 0.8, 8)]}
+      />
       <View style={{ flex: 1 }}>
-        <Text style={styles.deviceName}>No device connected</Text>
-        <Text style={styles.deviceHint}>Tap to find your Fire TV or Roku</Text>
+        <Text style={styles.deviceName} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.deviceHint} numberOfLines={2}>
+          {hint}
+        </Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
     </Pressable>
@@ -122,6 +160,7 @@ const PAD = 228;
 const ARROW = 62;
 
 function DPad() {
+  const onKey = useContext(SendKey);
   const edge = (PAD - ARROW) / 2;
   const arrow = (k: RemoteKey, label: string, icon: IconName, pos: ViewPos) => (
     <View style={[styles.arrowSlot, pos]}>
@@ -193,14 +232,18 @@ function Remote() {
 
 export default function RemoteScreen() {
   const [toast, showToast] = useToast();
-  const launch = (s: Shortcut) => showToast(`Connect a device to open ${s.label}.`);
+  const fail = (e: unknown) => showToast(e instanceof Error ? e.message : 'Something went wrong.');
+  const send = (key: RemoteKey) => void devicesStore.press(key).catch(fail);
+  const launch = (s: Shortcut) => void devicesStore.launch(s).catch(fail);
   return (
     <View style={[styles.screen, backdrop]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <DeviceBar />
-        <QuickLaunch onLaunch={launch} />
-        <Remote />
-      </ScrollView>
+      <SendKey.Provider value={send}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <DeviceBar />
+          <QuickLaunch onLaunch={launch} />
+          <Remote />
+        </ScrollView>
+      </SendKey.Provider>
       {toast}
     </View>
   );

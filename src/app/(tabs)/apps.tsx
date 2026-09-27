@@ -1,6 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import {
   MAX_FAVORITES,
@@ -9,13 +17,52 @@ import {
   getShortcut,
   type Shortcut,
 } from '@/catalog/shortcuts';
+import type { AppInfo } from '@/protocols/types';
+import { devicesStore, useDevices } from '@/store/devices';
 import { favoritesStore, useFavorites } from '@/store/favorites';
 import { AppTile, Chip, SectionHeader, useToast } from '@/ui/components';
 import { haptic } from '@/ui/haptics';
-import { backdrop, colors, spacing, typography } from '@/ui/theme';
+import { backdrop, colors, radius, spacing, typography } from '@/ui/theme';
 
 const COLUMNS = 3;
 const GAP = 10;
+
+/** A real app on the connected TV, drawn with the icon the TV provides. */
+function InstalledTile({
+  app,
+  width,
+  onPress,
+}: {
+  app: AppInfo;
+  width: number;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${app.name}`}
+      onPress={() => {
+        void haptic('tap');
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.installed,
+        { width, transform: [{ translateY: pressed ? 3 : 0 }] },
+      ]}
+    >
+      {app.iconUri ? (
+        <Image source={{ uri: app.iconUri }} style={styles.installedIcon} resizeMode="cover" />
+      ) : (
+        <View style={[styles.installedIcon, styles.installedFallback]}>
+          <Ionicons name="apps" size={22} color={colors.textSecondary} />
+        </View>
+      )}
+      <Text numberOfLines={1} style={styles.installedName}>
+        {app.name}
+      </Text>
+    </Pressable>
+  );
+}
 
 function MoveButton({
   label,
@@ -54,9 +101,13 @@ export default function AppsScreen() {
 
   const toggleEditing = () => router.setParams({ edit: editing ? undefined : '1' });
 
+  const { status, apps } = useDevices();
+  const tv = status === 'connected' ? devicesStore.current() : undefined;
+  const fail = (e: unknown) => showToast(e instanceof Error ? e.message : 'Something went wrong.');
+
   const onTile = (s: Shortcut) => {
     if (!editing) {
-      showToast(`Connect a device to open ${s.label}.`);
+      void devicesStore.launch(s).catch(fail);
       return;
     }
     if (!favoritesStore.toggle(s.id)) {
@@ -87,6 +138,22 @@ export default function AppsScreen() {
             onPress={toggleEditing}
           />
         </View>
+
+        {tv && apps && !editing ? (
+          <View style={styles.section}>
+            <SectionHeader title={`On ${tv.name}`} />
+            <View style={styles.grid}>
+              {apps.map((a) => (
+                <InstalledTile
+                  key={a.id}
+                  app={a}
+                  width={tileWidth}
+                  onPress={() => void devicesStore.launchApp(a.id).catch(fail)}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         <SectionHeader title="On your remote" />
         <View style={styles.grid}>
@@ -171,6 +238,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceRaised,
+  },
+  installed: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: '0 4px 0 rgba(0,0,0,0.55), 0 8px 14px rgba(0,0,0,0.45)',
+  },
+  installedIcon: { width: '100%', aspectRatio: 1.5 },
+  installedFallback: { alignItems: 'center', justifyContent: 'center' },
+  installedName: {
+    ...typography.caption,
+    color: colors.text,
+    fontWeight: '700',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
   },
   position: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
   note: {

@@ -5,17 +5,17 @@ Full brief and milestone plan: [`CLAUDE.md`](CLAUDE.md).
 
 ## Status
 
-| Milestone                     | State                                                          |
-| ----------------------------- | -------------------------------------------------------------- |
-| M1 — Scaffold                 | Implemented, **untested on hardware** (no build installed yet) |
-| UI refresh — Neon + shortcuts | Implemented, **untested on hardware** (web screenshots only)   |
-| UI round 2 — 3D + brands      | Implemented, **untested on hardware** (web screenshots only)   |
-| M2 — Roku                     | Not started                                                    |
-| M3 — Fire TV ADB client       | Not started                                                    |
-| M4 — Fire TV remote + apps    | Not started                                                    |
-| M5 — Devices + polish         | Not started                                                    |
-| M6 — Paywall                  | Not started                                                    |
-| M7 — TestFlight + Store       | Not started                                                    |
+| Milestone                     | State                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| M1 — Scaffold                 | Implemented, **untested on hardware** (no build installed yet)                    |
+| UI refresh — Neon + shortcuts | Implemented, **untested on hardware** (web screenshots only)                      |
+| UI round 2 — 3D + brands      | Implemented, **untested on hardware** (web screenshots only)                      |
+| M2 — Roku                     | Implemented, **UNTESTED on hardware** (no Roku available; mocked-HTTP tests only) |
+| M3 — Fire TV ADB client       | Not started                                                                       |
+| M4 — Fire TV remote + apps    | Not started                                                                       |
+| M5 — Devices + polish         | Not started                                                                       |
+| M6 — Paywall                  | Not started                                                                       |
+| M7 — TestFlight + Store       | Not started                                                                       |
 
 **Blockers for the first iPhone build:** Apple Developer Program enrollment, and the environment's network policy must allow `api.expo.dev` (`EXPO_TOKEN` is set). (Final app name is chosen at M7.)
 
@@ -44,6 +44,16 @@ Full brief and milestone plan: [`CLAUDE.md`](CLAUDE.md).
 - **Works with** screen (`src/app/compatible.tsx`, data in `src/catalog/compatibility.ts`): Fire TV and Roku models, setup steps, coming-later list. Nothing verified on hardware yet
 - **Devices tab:** Find your TV (search arrives with M2/M4), saved devices, manual IP, Works with links
 - Settings, like shortcuts, reset when the app closes until AsyncStorage is added
+
+## M2 — Roku
+
+- `src/protocols/roku/ecp.ts`: ECP client (`RokuDevice`) with full key map, power toggle, keydown/keyup for hold, text entry (`Lit_` per character), app list with icons, app launch, friendly errors (unreachable, timeout, 403 "Control by mobile apps")
+- `src/protocols/roku/discovery.ts`: **Search Wi-Fi** scans the likely /24 subnets for port 8060 (plain `fetch`, no native package). SSDP message builder and parser are ready; the UDP transport needs `react-native-udp` **and** Apple's multicast entitlement (requested from Apple) — wired later
+- `src/protocols/launch.ts`: shortcut tiles open the catalog channel ID, or fall back to matching the app name in the TV's app list
+- `src/store/devices.ts`: saved TVs, current connection, status (connecting / connected / not responding) — in memory until AsyncStorage is added
+- UI: Remote keys and quick-launch tiles control the connected Roku; status bar shows name, IP, errors (tap to reconnect); Devices tab has working search, manual IP (Roku), saved TVs with forget; Apps tab shows the TV's own installed apps with icons
+- `app.json`: `NSAllowsLocalNetworking` so iOS permits HTTP to the TV
+- Tests: `__tests__/roku-*.test.ts`, `launch.test.ts`, `devices-store.test.ts` with fixtures in `__tests__/fixtures/roku/` (written from Roku's docs, **not** recorded from a device)
 
 ## Commands
 

@@ -14,7 +14,10 @@
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Clicker needs access to your local network to find and control the TVs and streaming devices on your Wi-Fi. Nothing leaves your home network.",
         "NSBonjourServices": ["_amzn-wplay._tcp"],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {
